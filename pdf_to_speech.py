@@ -16,11 +16,11 @@ import torchaudio
 
 class File:
     def __init__(self, path: str, audio_type:str) -> None:
+        self.INVALID_FILETYPE_MSG = "Error: Invalid file format. %s must be a .txt file."
+        self.INVALID_PATH_MSG = "Error: Invalid file path/name. Path %s does not exist."
+        
         self.validate_file(path=path)
-        self.process_paths(audio_type)
-
-        INVALID_FILETYPE_MSG = "Error: Invalid file format. %s must be a .txt file."
-        INVALID_PATH_MSG = "Error: Invalid file path/name. Path %s does not exist."
+        self.process_paths(audio_type)     
 
     def process_paths(self, audio_type: str) -> None:
 
@@ -29,9 +29,9 @@ class File:
         reduce_filename = re.sub('\.', '-', str(self.filename)) # remove '.'
 
         # craft audio path
-        audio_path = ''
-        for toke in split_path[1:-1]:
-            audio_path += '/'+toke
+        audio_path = '/'.join(split_path[1:-1])
+        #for toke in split_path[1:-1]:
+            #audio_path += '/'+toke
 
         self.audio_path = audio_path + f"/{reduce_filename}.{audio_type}"
 
@@ -44,10 +44,10 @@ class File:
         print(f'\nValidating {path}')
 
         if not self.valid_path(path=path):
-            print(INVALID_PATH_MSG%(path))
+            print(self.INVALID_PATH_MSG%(path))
             quit()
         elif not self.validate_filetype(path=path):
-            print(INVALID_FILETYPE_MSG%(path))
+            print(self.INVALID_FILETYPE_MSG%(path))
             quit()
 
         print('Validation Successful...')
@@ -94,13 +94,14 @@ class PdfFile(File):
         return all_pages
 
     def process_text(self, sent: str) -> str:
-        proc_text = re.sub('\n', ' ', sent)
-        tokenlist = proc_text.split()
+        proc_text = re.sub('\n', ' ', sent) # remove new line breaks
+        tokenlist = proc_text.split() # split the text at every space
         # proc_text = [token for token in word_tokeniser(sent) if token.isalpha()]
         tokenlist = [re.sub(num2words(token, to = 'ordinal_num'), ' ') if (token.endswith(("nd","st","th")) and token[:-2].isdigit()) else token for token in tokenlist]
         tokenlist = [re.sub(num2words(str(token)[:4], to = 'ordinal'), ' ') if token.isdigit() else token for token in tokenlist]
         tokenlist = [' ' if re.search("^[+-]?[0-9]+\.[0-9]",token) else token for token in tokenlist] # remove any weird numbers
 
+        # make one string from split list
         proc_text = ' '.join(tokenlist)
 
         if len(proc_text) > 110:
@@ -118,6 +119,7 @@ class PdfFile(File):
 
         chunked_sents = self.get_chunks(sent, chunk_size=7) # create chunks of tokens
 
+        # generate single string for each token chunk
         sents = []
         for tokens in chunked_sents:
             str = ' '.join(tokens)
@@ -126,7 +128,7 @@ class PdfFile(File):
         return sents
 
 
-    # grabs 140 characters but respects words
+    # grabs chunks from a given array
     def get_chunks(self, tokens: list[str], chunk_size: int) -> list[list[str]]:
         chunked_list = []
         for i in range(0, len(tokens), chunk_size):
@@ -168,13 +170,15 @@ def text_to_speech(data: list, filename: str, batch_size: int) -> torch.Tensor:
         for wave in audio:
             outputs.append(audio)
 
+    # make single tensor of all wave forms
+    # TODO: tidy and more efficient code needed
     waveform = outputs[0]
     for a in tqdm(outputs):
         waveform = torch.cat((waveform, a)) # axis = 1
 
     return torch.reshape(waveform, shape=(1, len(waveform)))
 
-# grabs 140 characters but respects words
+# grabs a batches sequentially from a list given a batch size
 def get_batches(tokens: list[str], chunk_size: int) -> list[list[str]]:
     chunked_list = []
 
