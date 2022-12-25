@@ -146,7 +146,7 @@ class Model:
 def text_to_speech(data: list, filename: str, batch_size: int) -> torch.Tensor:
 
     sample_rate = 16000
-    device = torch.device('cpu')
+    device = torch.device('cpu') # change to gpu or cpu depending on users haardware
     # torch.set_num_threads(4)
 
     local_file = 'model.pt'
@@ -162,7 +162,7 @@ def text_to_speech(data: list, filename: str, batch_size: int) -> torch.Tensor:
     print(f'\nGenerating Text to Speech from {filename}')
 
     outputs = []
-    batches = get_batches(data, batch_size)
+    batches = get_batches(data, batch_size) # make these tensors and maybe into pytorch dataloader
 
     for batch in tqdm(batches):
         audio = model.apply_tts(texts=batch, sample_rate=sample_rate)
