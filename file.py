@@ -165,7 +165,7 @@ class PdfFile(File):
             token = num2words(token)
             if re.search('\-', token): #  num2words places '-' between word results
                 token = re.sub('\-', ' ', token) #  remove -
-                tokens = token.split() #  split at space eg token = 'twenty four'
+                # tokens = token.split() #  split at space eg token = 'twenty four'
                 return token
             else:
                 return token
